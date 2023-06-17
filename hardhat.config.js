@@ -1,9 +1,7 @@
-require("@nomiclabs/hardhat-waffle")
-require("@nomiclabs/hardhat-etherscan")
-require("hardhat-deploy")
-require("solidity-coverage")
-require("hardhat-gas-reporter")
+require("@nomicfoundation/hardhat-toolbox")
 require("hardhat-contract-sizer")
+
+//require("./tasks")
 require("dotenv").config()
 
 /**
@@ -33,11 +31,25 @@ module.exports = {
             saveDeployments: true,
             chainId: 5,
         },
+        calibration: {
+            chainId: 314159,
+            url: "https://api.calibration.node.glif.io/rpc/v1",
+            accounts: [PRIVATE_KEY],
+            gasPrice: 20e9,
+            gas: 25e6,
+        },
+        FilecoinMainnet: {
+            chainId: 314,
+            url: "https://api.node.glif.io",
+            accounts: [PRIVATE_KEY],
+        },
         polygonMumbai: {
             url: "https://rpc.ankr.com/polygon_mumbai",
             accounts: PRIVATE_KEY !== undefined ? [PRIVATE_KEY] : [],
             saveDeployments: true,
             chainId: 80001,
+            gasPrice: 20e9,
+            gas: 25e6,
         },
         scroll: {
             url: "https://scroll-testnet.blockpi.network/v1/rpc/public",
@@ -66,53 +78,6 @@ module.exports = {
             chainId: 100,
         },
     },
-    // etherscan: {
-    //     // yarn hardhat verify --network <NETWORK> <CONTRACT_ADDRESS> <CONSTRUCTOR_PARAMETERS>
-    //     apiKey: {
-    //         goerli: ETHERSCAN_API_KEY,
-    //         chiado: ETHERSCAN_API_KEY,
-    //         polygonMumbai: POLYGONSCAN_API_KEY,
-    //         scroll: ETHERSCAN_API_KEY,
-    //         taiko: ETHERSCAN_API_KEY,
-    //     },
-    //     customChains: [
-    //         {
-    //             network: "scroll",
-    //             chainId: 534353,
-    //             urls: {
-    //                 apiURL: "https://blockscout.scroll.io/api",
-    //                 browserURL: "https://blockscout.scroll.io/",
-    //             },
-    //         },
-    //         {
-    //             network: "taiko",
-    //             chainId: 167004,
-    //             urls: {
-    //                 apiURL: "https://explorer.a2.taiko.xyz/api",
-    //                 browserURL: "https://explorer.a2.taiko.xyz/",
-    //             },
-    //         },
-    //         {
-    //             network: "chiado",
-    //             chainId: 10200,
-    //             urls: {
-    //                 apiURL: "https://blockscout.chiadochain.net/api",
-    //                 browserURL: "https://blockscout.chiadochain.net/",
-    //             },
-    //         },
-    //     ],
-    // },
-    // gasReporter: {
-    //     enabled: REPORT_GAS,
-    //     currency: "USD",
-    //     outputFile: "gas-report.txt",
-    //     noColors: true,
-    //     coinmarketcap: process.env.COINMARKETCAP_API_KEY,
-    // },
-    contractSizer: {
-        runOnCompile: false,
-        only: ["EntryPoint"],
-    },
     namedAccounts: {
         deployer: {
             default: 0, // here this will by default take the first account as deployer
@@ -122,11 +87,12 @@ module.exports = {
     solidity: {
         compilers: [
             {
-                version: "0.8.12",
+                version: "0.8.17",
                 settings: {
                     optimizer: {
                         enabled: true,
                         runs: 1000,
+                        details: { yul: false },
                     },
                 },
             },
@@ -135,5 +101,13 @@ module.exports = {
     allowUnlimitedContractSize: true,
     mocha: {
         timeout: 500000, // 500 seconds max for running tests
+    },
+    gasReporter: {
+        enabled: true,
+        currency: "USD",
+        outputFile: "gas-report.txt",
+        noColors: true,
+        coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+        token: "MATIC",
     },
 }

@@ -1,123 +1,79 @@
 // SPDX-License-Identifier: MIT
 // Tells the Solidity compiler to compile only from v0.8.13 to v0.9.0
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.17;
 
+import "./RiotOrganisation.sol";
+
+/**
+ * @title TheRiotProtocol
+ * @dev Contract for managing the Riot Protocol and device registration.
+ * @author Gabriel Antony Xaviour
+ */
 contract TheRiotProtocol {
-    address[] public devices;
-
-    struct Device {
-        // JSON string that includes groupId; metadata; firmware; deviceId; subAddress;
-        bytes32 firmwareHash;
-        bytes32 deviceDataHash;
-        bytes32 deviceGroupIdHash;
-        address deviceId;
-        address subscriber;
-        bytes32 sessionSalt;
+    struct Organisation {
+        string name;
+        address creator;
+        address organisationContractAddress;
+        bool exists;
     }
 
-    mapping(address => Device) public deviceIdToDevice;
+    // uint256 private _deviceCount;
+    uint256 private _organisationsCount;
 
-    function mintDevice(
-        bytes32 _firmwareHash,
-        bytes32 _deviceDataHash,
-        bytes32 _deviceGroupIdHash,
-        address _deviceId
-    ) public returns (Device memory) {
-        bytes32 sessionSalt = keccak256(
-            abi.encodePacked(block.timestamp, block.difficulty, msg.sender)
-        );
-        Device memory newDevice = Device(
-            _firmwareHash,
-            _deviceDataHash,
-            _deviceGroupIdHash,
-            _deviceId,
-            msg.sender,
-            sessionSalt
-        );
-        deviceIdToDevice[_deviceId] = newDevice;
-        devices.push(_deviceId);
-        return newDevice;
+    // mapping(address => Device) private deviceIdToDevice;
+    mapping(address => Organisation) private addressToOrganisation;
+
+    uint256 private _createOrganisationFee;
+    address private _owner;
+
+    event OrganisationCreated(string name, address creator, address organisationContractAddress);
+
+    constructor(uint256 _createFee) {
+        _createOrganisationFee = _createFee;
+        _owner = msg.sender;
     }
 
-    function setSubscriberAddress(address _deviceId, address _subscriber)
-        public
-        returns (Device memory)
-    {
-        // Update the mappings
-        deviceIdToDevice[_deviceId].subscriber = _subscriber;
-
-        // Update the session salt
-        bytes32 newSessionSalt = keccak256(
-            abi.encodePacked(block.timestamp, block.difficulty, _subscriber)
-        );
-        deviceIdToDevice[_deviceId].sessionSalt = newSessionSalt;
-
-        return deviceIdToDevice[_deviceId];
-    }
-
-    modifier checkIfDeviceIsMinted(address _deviceId) {
-        require(deviceIdToDevice[_deviceId].deviceId == _deviceId, "Device not minted.");
+    modifier onlyOwner() {
+        require(msg.sender == _owner, "Only owner can call this function.");
         _;
     }
 
-    function getMerkleRoot(bytes32[] memory hashes) public pure returns (bytes32) {
-        require(hashes.length == 6, "Input array must have 6 elements");
-
-        bytes32 rootHash = keccak256(
-            abi.encodePacked(
-                keccak256(abi.encodePacked(hashes[0], hashes[1])),
-                keccak256(abi.encodePacked(hashes[2], hashes[3])),
-                keccak256(abi.encodePacked(hashes[4], hashes[5]))
-            )
+    /**
+     * @dev Registers a new group and adds a device.
+     * @param _name The name of the Riot Organisation NFT Collection.
+     * @param _symbol The symbol of the Riot Orgnaisation Devive NFT Collection.
+     */
+    function registerOrganisation(
+        string memory _name,
+        string memory _symbol,
+        address _dealClientAddress
+    ) public payable {
+        require(msg.value >= _createOrganisationFee, "Insufficient funds");
+        RiotOrganisation organisation = (new RiotOrganisation)(
+            _name,
+            _symbol,
+            msg.sender,
+            _dealClientAddress
         );
-
-        return rootHash;
+        _organisationsCount += 1;
+        addressToOrganisation[address(organisation)] = Organisation(
+            _name,
+            msg.sender,
+            address(organisation),
+            true
+        );
+        emit OrganisationCreated(_name, msg.sender, address(organisation));
     }
 
-    function generateRiotKeyForDevice(
-        bytes32 _firmwareHash,
-        bytes32 _deviceDataHash,
-        bytes32 _deviceGroupIdHash,
-        address _deviceId
-    ) public view checkIfDeviceIsMinted(_deviceId) returns (bytes32) {
-        // Check if the recieved data is in the valid devices
-        require(deviceIdToDevice[_deviceId].firmwareHash == _firmwareHash, "Invalid FirmwareHash");
-        require(
-            deviceIdToDevice[_deviceId].deviceDataHash == _deviceDataHash,
-            "Invalid DeviceDataHash"
-        );
-        require(
-            deviceIdToDevice[_deviceId].deviceGroupIdHash == _deviceGroupIdHash,
-            "Invalid DeviceGroupIdHash"
-        );
-
-        bytes32[] memory hashes = new bytes32[](6);
-        hashes[0] = deviceIdToDevice[_deviceId].firmwareHash;
-        hashes[1] = deviceIdToDevice[_deviceId].deviceDataHash;
-        hashes[2] = deviceIdToDevice[_deviceId].deviceGroupIdHash;
-        hashes[3] = bytes32(bytes20(_deviceId));
-        hashes[4] = bytes32(bytes20(deviceIdToDevice[_deviceId].subscriber));
-        hashes[5] = deviceIdToDevice[_deviceId].sessionSalt;
-
-        return getMerkleRoot(hashes);
+    function setCreateFee(uint256 _fee) public onlyOwner {
+        _createOrganisationFee = _fee;
     }
 
-    function generateRiotKeyForSubscriber(address _deviceId)
-        public
-        view
-        checkIfDeviceIsMinted(_deviceId)
-        returns (bytes32)
-    {
-        // Check if the recieved data is in the valid devices
-        require(deviceIdToDevice[_deviceId].subscriber == msg.sender, "Unauthorized User");
+    function isRiotOrganisation(address _address) public view returns (bool) {
+        return addressToOrganisation[_address].exists;
+    }
 
-        bytes32[] memory hashes = new bytes32[](6);
-        hashes[0] = deviceIdToDevice[_deviceId].firmwareHash;
-        hashes[1] = deviceIdToDevice[_deviceId].deviceDataHash;
-        hashes[2] = deviceIdToDevice[_deviceId].deviceGroupIdHash;
-        hashes[3] = bytes32(bytes20(_deviceId));
-        hashes[4] = bytes32(bytes20(msg.sender));
-        hashes[5] = deviceIdToDevice[_deviceId].sessionSalt;
-        return getMerkleRoot(hashes);
+    function getOrganisation(address _address) public view returns (Organisation memory) {
+        return addressToOrganisation[_address];
     }
 }
