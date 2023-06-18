@@ -17,15 +17,21 @@ task("register-organisation", "Registers an organisation")
 
         const protocolFactory = await ethers.getContractFactory("TheRiotProtocol")
         const protocolContract = await protocolFactory.attach(
-            "0x2f5b7835b0346201821d285295c0502a64ed391f"
+            "0xb3aaff32d70a2729a393578c3208256827c278b6"
         )
-        const registerTx = await protocolContract.registerOrganisation(name, symbol, client, {
-            from: deployer,
-            value: ethers.parseEther("0.00000000000001"),
-            gasLimit: 100000000,
-            maxFeePerGas: 78000000000,
-            maxPriorityFeePerGas: 2000000000,
-        })
+        const registerTx = await protocolContract.registerOrganisation(
+            name,
+            symbol,
+            "https://bafkreidkje2jl4rxduz5rmiybdzvclsy4jzpydwy7mbutppt7zts5yhsku.ipfs.nftstorage.link/",
+            client,
+            {
+                from: deployer,
+                value: ethers.parseEther("0.00000000000001"),
+                gasLimit: 100000000,
+                maxFeePerGas: 78000000000,
+                maxPriorityFeePerGas: 2000000000,
+            }
+        )
 
         // const getRegistrationFee = await protocolContract.getCreateFee()
 

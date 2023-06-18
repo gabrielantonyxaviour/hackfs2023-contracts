@@ -124,6 +124,7 @@ contract RiotOrganisation {
     mapping(address => bool) public isAdmin;
     mapping(address => Device) public deviceIdToDevice;
     IDealClient public dealClient;
+    Device[] private _devices;
 
     constructor(
         string memory name_,
@@ -176,14 +177,14 @@ contract RiotOrganisation {
             params.deviceDataHash,
             params.deviceGroupIdHash,
             msg.sender,
-            params.sessionSalt,
+            params.sessionSalt, // drand randomness
             true
         );
         deviceIdToDevice[params.deviceId] = newDevice;
         _owners[_tokenId] = msg.sender;
         _tokenURIs[_tokenId] = params.uri;
         _tokenIdCounter += 1;
-
+        _devices.push(newDevice);
         emit DeviceCreated(_tokenId, msg.sender, params.uri);
     }
 
@@ -209,11 +210,19 @@ contract RiotOrganisation {
      * @param _firmwareHash The new firmware hash.
      * @param _deviceId The device address.
      */
-    function updateFirmware(bytes32 _firmwareHash, address _deviceId) public onlyAdmin {
+    function updateFirmware(
+        bytes32 _firmwareHash,
+        address _deviceId,
+        bytes32 sessionSalt
+    ) public onlyAdmin {
         deviceIdToDevice[_deviceId].firmwareHash = _firmwareHash;
+        deviceIdToDevice[_deviceId].sessionSalt = sessionSalt;
     }
 
-    function storeDeviceData(IDealClient.DealRequest memory deal) public onlyDevice {
+    function storeDeviceData(IDealClient.DealRequest memory deal, bytes32 sessionSalt)
+        public
+        onlyDevice
+    {
         require(address(dealClient) != address(0), "DealClient not set");
         dealClient.makeDealProposal(deal);
     }
@@ -394,6 +403,14 @@ contract RiotOrganisation {
      */
     function getDevice(address _deviceId) public view returns (Device memory) {
         return deviceIdToDevice[_deviceId];
+    }
+
+    /**
+     * @dev Returns the all Devices.
+     * @return The Device struct.
+     */
+    function getDevices() public view returns (Device[] memory) {
+        return _devices;
     }
 
     /**
