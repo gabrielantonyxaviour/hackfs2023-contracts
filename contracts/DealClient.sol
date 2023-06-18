@@ -2,8 +2,6 @@
 pragma solidity ^0.8.17;
 
 
-
-
 library CommonTypes {
     uint constant UniversalReceiverHookMethodNum = 3726118371;
 
