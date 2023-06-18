@@ -1,7 +1,7 @@
 require("@nomicfoundation/hardhat-toolbox")
 require("hardhat-contract-sizer")
-
-//require("./tasks")
+require("hardhat-deploy")
+require("./tasks")
 require("dotenv").config()
 
 /**

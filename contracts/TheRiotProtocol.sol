@@ -17,10 +17,8 @@ contract TheRiotProtocol {
         bool exists;
     }
 
-    // uint256 private _deviceCount;
     uint256 private _organisationsCount;
 
-    // mapping(address => Device) private deviceIdToDevice;
     mapping(address => Organisation) private addressToOrganisation;
 
     uint256 private _createOrganisationFee;
@@ -67,6 +65,10 @@ contract TheRiotProtocol {
 
     function setCreateFee(uint256 _fee) public onlyOwner {
         _createOrganisationFee = _fee;
+    }
+
+    function getCreateFee() public view returns (uint256) {
+        return _createOrganisationFee;
     }
 
     function isRiotOrganisation(address _address) public view returns (bool) {
